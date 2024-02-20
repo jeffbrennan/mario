@@ -1,0 +1,74 @@
+{
+  "name": "copy_iris_data",
+  "properties": {
+    "activities": [
+      {
+        "name": "Copy data",
+        "type": "Copy",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.00:00:05",
+          "retry": 0,
+          "retryIntervalInSeconds": 60,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "userProperties": [],
+        "typeProperties": {
+          "source": {
+            "type": "DelimitedTextSource",
+            "storeSettings": {
+              "type": "AzureBlobStorageReadSettings",
+              "recursive": true,
+              "enablePartitionDiscovery": false
+            },
+            "formatSettings": {
+              "type": "DelimitedTextReadSettings"
+            }
+          },
+          "sink": {
+            "type": "DelimitedTextSink",
+            "storeSettings": {
+              "type": "AzureBlobStorageWriteSettings"
+            },
+            "formatSettings": {
+              "type": "DelimitedTextWriteSettings",
+              "quoteAllText": true,
+              "fileExtension": ".txt"
+            }
+          },
+          "enableStaging": false,
+          "translator": {
+            "type": "TabularTranslator",
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          }
+        },
+        "inputs": [
+          {
+            "referenceName": "jb_blob",
+            "type": "DatasetReference",
+            "parameters": {
+              "folderName": "bronze",
+              "fileName": "iris"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "jb_blob",
+            "type": "DatasetReference",
+            "parameters": {
+              "folderName": "silver",
+              "fileName": "iris"
+            }
+          }
+        ]
+      }
+    ],
+    "annotations": []
+  }
+}
