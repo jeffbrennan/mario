@@ -3,11 +3,13 @@ name = "mario-adf"
 version = "0.1.0"
 description = ""
 authors = ["jeffbrennan"]
-readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-
+azure-core = "*"
+azure-identity = "*"
+azure-mgmt-datafactory = "*"
+python-dotenv = "*"
 
 [build-system]
 requires = ["poetry-core"]
