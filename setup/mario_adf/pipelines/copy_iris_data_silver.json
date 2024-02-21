@@ -1,5 +1,5 @@
 {
-  "name": "copy_iris_data",
+  "name": "copy_iris_data_silver",
   "properties": {
     "activities": [
       {
