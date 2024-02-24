@@ -40,7 +40,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	pipelineRuns, _ := getPipelineRuns(ctx, resourceGroupName, dataFactoryName)
+	pipelineRuns, _ := getPipelineRuns(ctx, resourceGroupName, dataFactoryName, 7)
 
 	fmt.Println("Pipeline runs:")
 	for _, run := range pipelineRuns.Value {
@@ -51,19 +51,26 @@ func main() {
 
 }
 
-func getPipelineRuns(ctx context.Context, resourceGroupName string, dataFactoryName string) (armdatafactory.PipelineRunsClientQueryByFactoryResponse, error) {
+func getPipelineRuns(ctx context.Context, resourceGroupName string, dataFactoryName string, nDays int) (armdatafactory.PipelineRunsClientQueryByFactoryResponse, error) {
+	if nDays < 1 {
+		log.Fatalf("nDays must be greater than 0")
+	}
+
+	if nDays > 30 {
+		log.Fatalf("nDays must be less than 30")
+	}
+
 	pipelineRunsClient := datafactoryClientFactory.NewPipelineRunsClient()
-	runsFrom := time.Now().AddDate(0, 0, -7)
+	runsFrom := time.Now().AddDate(0, 0, -nDays)
 	runsTo := time.Now()
 
 	runFilterParameters := armdatafactory.RunFilterParameters{
 		LastUpdatedAfter:  &runsFrom,
 		LastUpdatedBefore: &runsTo,
-		ContinuationToken: nil,
-		Filters:           nil,
-		OrderBy:           nil,
 	}
 
+	// print pipeline runs as date
+	log.Printf("Getting pipeline runs from %s to %s", runsFrom.Format("2006-01-02"), runsTo.Format("2006-01-02"))
 	return pipelineRunsClient.QueryByFactory(ctx, resourceGroupName, dataFactoryName, runFilterParameters, nil)
 }
 
