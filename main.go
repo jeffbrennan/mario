@@ -14,7 +14,6 @@ import (
 
 var (
 	datafactoryClientFactory *armdatafactory.ClientFactory
-	factoriesClient          *armdatafactory.FactoriesClient
 )
 
 func main() {
@@ -41,15 +40,31 @@ func main() {
 		log.Fatal(err)
 	}
 
-	factoriesClient = datafactoryClientFactory.NewFactoriesClient()
-	dataFactory, err := getDataFactory(ctx, resourceGroupName, dataFactoryName)
-	if err != nil {
-		log.Fatal(err)
+	pipelineRuns, _ := getPipelineRuns(ctx, resourceGroupName, dataFactoryName)
+
+	fmt.Println("Pipeline runs:")
+	for _, run := range pipelineRuns.Value {
+		fmt.Printf("Run ID: %s, Status: %s, Duration: %s\n", *run.RunID, *run.Status, fmt.Sprint(*run.DurationInMs))
 	}
-	log.Println("get data factory:", *dataFactory.ID)
 
 	fmt.Println("=================================")
 
+}
+
+func getPipelineRuns(ctx context.Context, resourceGroupName string, dataFactoryName string) (armdatafactory.PipelineRunsClientQueryByFactoryResponse, error) {
+	pipelineRunsClient := datafactoryClientFactory.NewPipelineRunsClient()
+	runsFrom := time.Now().AddDate(0, 0, -7)
+	runsTo := time.Now()
+
+	runFilterParameters := armdatafactory.RunFilterParameters{
+		LastUpdatedAfter:  &runsFrom,
+		LastUpdatedBefore: &runsTo,
+		ContinuationToken: nil,
+		Filters:           nil,
+		OrderBy:           nil,
+	}
+
+	return pipelineRunsClient.QueryByFactory(ctx, resourceGroupName, dataFactoryName, runFilterParameters, nil)
 }
 
 func getEnvironmentVariable(key string) string {
@@ -63,15 +78,6 @@ func getEnvironmentVariable(key string) string {
 	}
 
 	return value
-}
-
-func getDataFactory(ctx context.Context, resourceGroupName string, dataFactoryName string) (*armdatafactory.Factory, error) {
-	resp, err := factoriesClient.Get(ctx, resourceGroupName, dataFactoryName, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return &resp.Factory, nil
 }
 
 func timer(name string) func() {
