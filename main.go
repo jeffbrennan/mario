@@ -19,6 +19,7 @@ var (
 
 func main() {
 	defer timer("main")()
+	fmt.Println("============= Mario =============")
 	// setup
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -47,6 +48,8 @@ func main() {
 	}
 	log.Println("get data factory:", *dataFactory.ID)
 
+	fmt.Println("=================================")
+
 }
 
 func getEnvironmentVariable(key string) string {
@@ -63,7 +66,6 @@ func getEnvironmentVariable(key string) string {
 }
 
 func getDataFactory(ctx context.Context, resourceGroupName string, dataFactoryName string) (*armdatafactory.Factory, error) {
-
 	resp, err := factoriesClient.Get(ctx, resourceGroupName, dataFactoryName, nil)
 	if err != nil {
 		return nil, err
