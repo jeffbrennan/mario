@@ -58,7 +58,11 @@ func configFromFile(filePath string) (*Config, error) {
 		return nil, err
 	}
 
-	file, diags := hclsyntax.ParseConfig(content, filePath, hcl.Pos{Line: 1, Column: 1})
+	file, diags := hclsyntax.ParseConfig(
+		content,
+		filePath,
+		hcl.Pos{Line: 1, Column: 1},
+	)
 	if diags.HasErrors() {
 		return nil, fmt.Errorf("ParseConfig: %v", diags)
 	}
@@ -118,9 +122,12 @@ func listBlobs(client *azblob.Client, containerName string) {
 
 	fmt.Println("Listing the blobs in the container:")
 
-	pager := client.NewListBlobsFlatPager(containerName, &azblob.ListBlobsFlatOptions{
-		Include: azblob.ListBlobsInclude{Snapshots: true, Versions: true},
-	})
+	pager := client.NewListBlobsFlatPager(
+		containerName,
+		&azblob.ListBlobsFlatOptions{
+			Include: azblob.ListBlobsInclude{Snapshots: true, Versions: true},
+		},
+	)
 
 	for pager.More() {
 		resp, err := pager.NextPage(context.TODO())
@@ -141,7 +148,10 @@ func main() {
 		blobName   = "iris.csv"
 		folderName = "bronze"
 	)
-	url := fmt.Sprintf("https://%s.blob.core.windows.net", config.Variables["storage_account_name"].Default)
+	url := fmt.Sprintf(
+		"https://%s.blob.core.windows.net",
+		config.Variables["storage_account_name"].Default,
+	)
 	containerName := config.Variables["container_name"].Default
 	fileNameFull := fmt.Sprintf("%s/%s", folderName, blobName)
 
@@ -155,7 +165,13 @@ func main() {
 	handleError(err)
 
 	fmt.Printf("Uploading a blob named %s\n", blobName)
-	client.UploadFile(ctx, containerName, fileNameFull, file, &azblob.UploadFileOptions{})
+	client.UploadFile(
+		ctx,
+		containerName,
+		fileNameFull,
+		file,
+		&azblob.UploadFileOptions{},
+	)
 
 	listBlobs(client, containerName)
 }

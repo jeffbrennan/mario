@@ -35,23 +35,42 @@ func main() {
 		log.Fatal(err)
 	}
 
-	datafactoryClientFactory, err = armdatafactory.NewClientFactory(subscriptionID, cred, nil)
+	datafactoryClientFactory, err = armdatafactory.NewClientFactory(
+		subscriptionID,
+		cred,
+		nil,
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	pipelineRuns, _ := getPipelineRuns(ctx, resourceGroupName, dataFactoryName, 7)
+	pipelineRuns, _ := getPipelineRuns(
+		ctx,
+		resourceGroupName,
+		dataFactoryName,
+		7,
+	)
 
 	fmt.Println("Pipeline runs:")
 	for _, run := range pipelineRuns.Value {
-		fmt.Printf("Run ID: %s, Status: %s, Duration: %s\n", *run.RunID, *run.Status, fmt.Sprint(*run.DurationInMs))
+		fmt.Printf(
+			"Run ID: %s, Status: %s, Duration: %s\n",
+			*run.RunID,
+			*run.Status,
+			fmt.Sprint(*run.DurationInMs),
+		)
 	}
 
 	fmt.Println("=================================")
 
 }
 
-func getPipelineRuns(ctx context.Context, resourceGroupName string, dataFactoryName string, nDays int) (armdatafactory.PipelineRunsClientQueryByFactoryResponse, error) {
+func getPipelineRuns(
+	ctx context.Context,
+	resourceGroupName string,
+	dataFactoryName string,
+	nDays int,
+) (armdatafactory.PipelineRunsClientQueryByFactoryResponse, error) {
 	if nDays < 1 {
 		log.Fatalf("nDays must be greater than 0")
 	}
@@ -70,8 +89,18 @@ func getPipelineRuns(ctx context.Context, resourceGroupName string, dataFactoryN
 	}
 
 	// print pipeline runs as date
-	log.Printf("Getting pipeline runs from %s to %s", runsFrom.Format("2006-01-02"), runsTo.Format("2006-01-02"))
-	return pipelineRunsClient.QueryByFactory(ctx, resourceGroupName, dataFactoryName, runFilterParameters, nil)
+	log.Printf(
+		"Getting pipeline runs from %s to %s",
+		runsFrom.Format("2006-01-02"),
+		runsTo.Format("2006-01-02"),
+	)
+	return pipelineRunsClient.QueryByFactory(
+		ctx,
+		resourceGroupName,
+		dataFactoryName,
+		runFilterParameters,
+		nil,
+	)
 }
 
 func getEnvironmentVariable(key string) string {
