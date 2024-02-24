@@ -65,7 +65,9 @@ func main() {
 
 }
 
-func summarizePipelineRuns(runs armdatafactory.PipelineRunsClientQueryByFactoryResponse) map[string]PipelineRunSummary {
+func summarizePipelineRuns(
+	runs armdatafactory.PipelineRunsClientQueryByFactoryResponse,
+) map[string]PipelineRunSummary {
 	pipelineRunSummary := make(map[string]PipelineRunSummary)
 	for _, run := range runs.Value {
 		summary, exists := pipelineRunSummary[*run.PipelineName]
@@ -95,11 +97,17 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 	headerLength := 50
 	headerTitle := "Pipeline Summary"
 	headerSpace := (headerLength - len(headerTitle)) / 2
-	fmt.Println(strings.Repeat("=", headerSpace), headerTitle, strings.Repeat("=", headerSpace))
+	fmt.Println(
+		strings.Repeat("=", headerSpace),
+		headerTitle,
+		strings.Repeat("=", headerSpace),
+	)
 
 	// TODO: make a table
 	for _, summary := range pipelineRunSummary {
-		summary.RuntimeAvgMin = summary.RuntimeTotalMin / float32(summary.Success+summary.Failed)
+		summary.RuntimeAvgMin = summary.RuntimeTotalMin / float32(
+			summary.Success+summary.Failed,
+		)
 		fmt.Println()
 		fmt.Println(summary.PipelineName, "============")
 		fmt.Println("Success: ", summary.Success)
@@ -113,7 +121,9 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 
 }
 
-func printPipelineRuns(runs armdatafactory.PipelineRunsClientQueryByFactoryResponse) {
+func printPipelineRuns(
+	runs armdatafactory.PipelineRunsClientQueryByFactoryResponse,
+) {
 	for _, run := range runs.Value {
 		fmt.Printf(
 			"Pipeline Name: %s, Status: %s, Duration: %s\n",
