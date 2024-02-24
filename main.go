@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -15,6 +16,15 @@ import (
 var (
 	datafactoryClientFactory *armdatafactory.ClientFactory
 )
+
+type PipelineRunSummary struct {
+	PipelineName    string
+	Success         int
+	Failed          int
+	InProgress      int
+	RuntimeTotalMin float32
+	RuntimeAvgMin   float32
+}
 
 func main() {
 	defer timer("main")()
@@ -51,18 +61,67 @@ func main() {
 		7,
 	)
 
-	fmt.Println("Pipeline runs:")
-	for _, run := range pipelineRuns.Value {
+	printPipelineRunSummary(summarizePipelineRuns(pipelineRuns))
+
+}
+
+func summarizePipelineRuns(runs armdatafactory.PipelineRunsClientQueryByFactoryResponse) map[string]PipelineRunSummary {
+	pipelineRunSummary := make(map[string]PipelineRunSummary)
+	for _, run := range runs.Value {
+		summary, exists := pipelineRunSummary[*run.PipelineName]
+		if !exists {
+			summary = PipelineRunSummary{
+				PipelineName: *run.PipelineName,
+			}
+		}
+
+		switch *run.Status {
+		case "Succeeded":
+			summary.Success++
+		case "Failed":
+			summary.Failed++
+		case "InProgress":
+			summary.InProgress++
+		}
+
+		summary.RuntimeTotalMin += float32(*run.DurationInMs) / (1000 * 60)
+		pipelineRunSummary[*run.PipelineName] = summary
+	}
+
+	return pipelineRunSummary
+}
+
+func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
+	headerLength := 50
+	headerTitle := "Pipeline Summary"
+	headerSpace := (headerLength - len(headerTitle)) / 2
+	fmt.Println(strings.Repeat("=", headerSpace), headerTitle, strings.Repeat("=", headerSpace))
+
+	// TODO: make a table
+	for _, summary := range pipelineRunSummary {
+		summary.RuntimeAvgMin = summary.RuntimeTotalMin / float32(summary.Success+summary.Failed)
+		fmt.Println()
+		fmt.Println(summary.PipelineName, "============")
+		fmt.Println("Success: ", summary.Success)
+		fmt.Println("Failed: ", summary.Failed)
+		fmt.Println("In Progress: ", summary.InProgress)
+		fmt.Println("Avg Runtime: ", summary.RuntimeAvgMin)
+	}
+
+	summaryEnd := strings.Repeat("=", headerLength)
+	fmt.Println(summaryEnd)
+
+}
+
+func printPipelineRuns(runs armdatafactory.PipelineRunsClientQueryByFactoryResponse) {
+	for _, run := range runs.Value {
 		fmt.Printf(
-			"Run ID: %s, Status: %s, Duration: %s\n",
-			*run.RunID,
+			"Pipeline Name: %s, Status: %s, Duration: %s\n",
+			*run.PipelineName,
 			*run.Status,
 			fmt.Sprint(*run.DurationInMs),
 		)
 	}
-
-	fmt.Println("=================================")
-
 }
 
 func getPipelineRuns(
