@@ -33,6 +33,8 @@ override.tf.json
 .terraformrc
 terraform.rc
 
+*.lock.hcl
+
 
 # executable
 mario
