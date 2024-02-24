@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/datafactory/armdatafactory/v3"
@@ -16,6 +18,7 @@ var (
 )
 
 func main() {
+	defer timer("main")()
 	// setup
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -67,4 +70,11 @@ func getDataFactory(ctx context.Context, resourceGroupName string, dataFactoryNa
 	}
 
 	return &resp.Factory, nil
+}
+
+func timer(name string) func() {
+	start := time.Now()
+	return func() {
+		fmt.Printf("%s took %v\n", name, time.Since(start))
+	}
 }
