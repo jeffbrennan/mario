@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 
@@ -22,19 +21,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file: %s", err)
 	}
+	subscriptionID := getEnvironmentVariable("AZ_SUBSCRIPTION_ID")
+	resourceGroupName := getEnvironmentVariable("AZ_RESOURCE_GROUP")
+	dataFactoryName := getEnvironmentVariable("AZ_DATAFACTORY_NAME")
+
+	ctx := context.Background()
 
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		log.Fatal(err)
-	}
-	ctx := context.Background()
-
-	subscriptionID := os.Getenv("AZ_SUBSCRIPTION_ID")
-	resourceGroupName := os.Getenv("AZ_RESOURCE_GROUP")
-	dataFactoryName := os.Getenv("AZ_DATAFACTORY_NAME")
-
-	if dataFactoryName == "" {
-		log.Fatal("AZ_DATAFACTORY_NAME is required")
 	}
 
 	datafactoryClientFactory, err = armdatafactory.NewClientFactory(subscriptionID, cred, nil)
@@ -43,16 +38,25 @@ func main() {
 	}
 
 	factoriesClient = datafactoryClientFactory.NewFactoriesClient()
-
-	fmt.Println(resourceGroupName)
-	fmt.Println(dataFactoryName)
-
 	dataFactory, err := getDataFactory(ctx, resourceGroupName, dataFactoryName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println("get data factory:", *dataFactory.ID)
 
+}
+
+func getEnvironmentVariable(key string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		log.Fatalf("Environment variable %s is not set", key)
+	}
+
+	if value == "" {
+		log.Fatalf("Environment variable %s is empty", key)
+	}
+
+	return value
 }
 
 func getDataFactory(ctx context.Context, resourceGroupName string, dataFactoryName string) (*armdatafactory.Factory, error) {
