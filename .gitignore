@@ -36,8 +36,6 @@ terraform.rc
 *.lock.hcl
 
 
-# executable
-mario
 
 tf/variables.tf
 .vscode/launch.json
