@@ -1,6 +1,7 @@
-package mario
+package summarize
 
 import (
+	"github.com/jeffbrennan/mario/cmd"
 	"github.com/jeffbrennan/mario/pkg/mario"
 	"github.com/spf13/cobra"
 )
@@ -17,8 +18,7 @@ var summarizeCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(summarizeCmd)
+	cmd.RootCmd.AddCommand(summarizeCmd)
 	summarizeCmd.PersistentFlags().Int("days", 7, "number of days to summarize")
 	summarizeCmd.PersistentFlags().String("name", "", "substring of the pipeline to summarize")
-
 }
