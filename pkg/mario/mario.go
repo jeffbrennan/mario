@@ -58,7 +58,6 @@ func Summarize(nDays int, name string) {
 		resourceGroupName,
 		dataFactoryName,
 		nDays,
-		name,
 	)
 
 	pipelineSummary := summarizePipelineRuns(pipelineRuns)
@@ -139,7 +138,6 @@ func getPipelineRuns(
 	resourceGroupName string,
 	dataFactoryName string,
 	nDays int,
-	name string,
 ) (armdatafactory.PipelineRunsClientQueryByFactoryResponse, error) {
 
 	if nDays < 1 {
