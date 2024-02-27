@@ -1,9 +1,6 @@
 package mario
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/jeffbrennan/mario/pkg/mario"
 	"github.com/spf13/cobra"
 )
@@ -11,19 +8,17 @@ import (
 var summarizeCmd = &cobra.Command{
 	Use:   "summarize",
 	Short: "summarize pipeline runs",
-	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
-		nDays, err := strconv.Atoi(args[0])
-		if err != nil {
-			fmt.Println("invalid number of days:", args[0])
-			return
-		}
-
-		mario.Summarize(nDays)
+		nDays, _ := cmd.Flags().GetInt("days")
+		name, _ := cmd.Flags().GetString("name")
+		mario.Summarize(nDays, name)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(summarizeCmd)
+	summarizeCmd.PersistentFlags().Int("days", 7, "number of days to summarize")
+	summarizeCmd.PersistentFlags().String("name", "", "substring of the pipeline to summarize")
+
 }
