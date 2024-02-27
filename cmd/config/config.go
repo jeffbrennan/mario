@@ -10,10 +10,11 @@ var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "add azure environment details to the CLI",
 	Run: func(cmd *cobra.Command, args []string) {
-		mario.ConfigSetup()
+		mario.HelloConfig()
 	},
 }
 
 func init() {
 	cmd.RootCmd.AddCommand(configCmd)
+
 }
