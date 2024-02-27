@@ -44,3 +44,5 @@ databricks.yml
 setup/mario_databricks/.databricks
 *.DS_Store
 *.pyc
+
+*.mariocfg
