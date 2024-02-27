@@ -26,7 +26,7 @@ type PipelineRunSummary struct {
 	RuntimeAvgMin   float32
 }
 
-func Summarize(nDays int) {
+func Summarize(nDays int, name string) {
 	defer timer("Summarize")()
 	// setup
 	err := godotenv.Load(".env")
@@ -58,15 +58,30 @@ func Summarize(nDays int) {
 		resourceGroupName,
 		dataFactoryName,
 		nDays,
+		name,
 	)
 
 	pipelineSummary := summarizePipelineRuns(pipelineRuns)
-	printPipelineRunSummary(pipelineSummary)
+
+	if name == "" {
+		printPipelineRunSummary(pipelineSummary)
+		return
+	}
+
+	// if name is not empty, filter the pipeline summary
+	filteredPipelineSummary := make(map[string]PipelineRunSummary)
+	for _, summary := range pipelineSummary {
+		if strings.Contains(summary.PipelineName, name) {
+			filteredPipelineSummary[summary.PipelineName] = summary
+		}
+	}
+	printPipelineRunSummary(filteredPipelineSummary)
 }
 
 func summarizePipelineRuns(
 	runs armdatafactory.PipelineRunsClientQueryByFactoryResponse,
 ) map[string]PipelineRunSummary {
+
 	pipelineRunSummary := make(map[string]PipelineRunSummary)
 	for _, run := range runs.Value {
 		summary, exists := pipelineRunSummary[*run.PipelineName]
@@ -107,7 +122,6 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 		summary.RuntimeAvgMin = summary.RuntimeTotalMin / float32(
 			summary.Success+summary.Failed,
 		)
-		fmt.Println()
 		fmt.Println(summary.PipelineName, "============")
 		fmt.Println("Success: ", summary.Success)
 		fmt.Println("Failed: ", summary.Failed)
@@ -120,25 +134,14 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 
 }
 
-func printPipelineRuns(
-	runs armdatafactory.PipelineRunsClientQueryByFactoryResponse,
-) {
-	for _, run := range runs.Value {
-		fmt.Printf(
-			"Pipeline Name: %s, Status: %s, Duration: %s\n",
-			*run.PipelineName,
-			*run.Status,
-			fmt.Sprint(*run.DurationInMs),
-		)
-	}
-}
-
 func getPipelineRuns(
 	ctx context.Context,
 	resourceGroupName string,
 	dataFactoryName string,
 	nDays int,
+	name string,
 ) (armdatafactory.PipelineRunsClientQueryByFactoryResponse, error) {
+
 	if nDays < 1 {
 		log.Fatalf("nDays must be greater than 0")
 	}
@@ -147,28 +150,29 @@ func getPipelineRuns(
 		log.Fatalf("nDays must be less than 30")
 	}
 
-	pipelineRunsClient := datafactoryClientFactory.NewPipelineRunsClient()
 	runsFrom := time.Now().AddDate(0, 0, -nDays)
 	runsTo := time.Now()
+
+	pipelineRunsClient := datafactoryClientFactory.NewPipelineRunsClient()
 
 	runFilterParameters := armdatafactory.RunFilterParameters{
 		LastUpdatedAfter:  &runsFrom,
 		LastUpdatedBefore: &runsTo,
 	}
 
-	// print pipeline runs as date
 	log.Printf(
 		"Getting pipeline runs from %s to %s",
 		runsFrom.Format("2006-01-02"),
 		runsTo.Format("2006-01-02"),
 	)
-	return pipelineRunsClient.QueryByFactory(
+	pipelineRuns, _ := pipelineRunsClient.QueryByFactory(
 		ctx,
 		resourceGroupName,
 		dataFactoryName,
 		runFilterParameters,
 		nil,
 	)
+	return pipelineRuns, nil
 }
 
 func getEnvironmentVariable(key string) string {
