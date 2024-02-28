@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 type AZEnv struct {
@@ -26,7 +27,7 @@ func ConfigSetup() {
 	}
 
 	writeConfig(azEnv)
-
+	fmt.Println("Azure environment details added to the CLI.")
 }
 
 func writeConfig(azEnv AZEnv) {
@@ -48,6 +49,36 @@ func writeConfig(azEnv AZEnv) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func readConfig() AZEnv {
+	f, err := os.Open(".mariocfg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+
+	reader := bufio.NewReader(f)
+	azSubscriptionID, err := reader.ReadString('\n')
+	if err != nil {
+		log.Fatal(err)
+	}
+	azResourceGroupName, err := reader.ReadString('\n')
+	if err != nil {
+		log.Fatal(err)
+	}
+	azDataFactoryName, err := reader.ReadString('\n')
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	azEnv := AZEnv{
+		SubscriptionID:    strings.TrimSpace(azSubscriptionID),
+		ResourceGroupName: strings.TrimSpace(azResourceGroupName),
+		DataFactoryName:   strings.TrimSpace(azDataFactoryName),
+	}
+
+	return azEnv
 }
 
 func parseInput(input string) string {

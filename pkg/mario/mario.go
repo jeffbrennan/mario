@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/datafactory/armdatafactory/v3"
-	"github.com/joho/godotenv"
 )
 
 var (
@@ -28,14 +26,11 @@ type PipelineRunSummary struct {
 
 func Summarize(nDays int, name string) {
 	defer timer("Summarize")()
-	// setup
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Error loading .env file: %s", err)
-	}
-	subscriptionID := getEnvironmentVariable("AZ_SUBSCRIPTION_ID")
-	resourceGroupName := getEnvironmentVariable("AZ_RESOURCE_GROUP")
-	dataFactoryName := getEnvironmentVariable("AZ_DATAFACTORY_NAME")
+
+	azEnv := readConfig()
+	subscriptionID := azEnv.SubscriptionID
+	resourceGroupName := azEnv.ResourceGroupName
+	dataFactoryName := azEnv.DataFactoryName
 
 	ctx := context.Background()
 
@@ -172,20 +167,6 @@ func getPipelineRuns(
 	)
 	return pipelineRuns, nil
 }
-
-func getEnvironmentVariable(key string) string {
-	value, exists := os.LookupEnv(key)
-	if !exists {
-		log.Fatalf("Environment variable %s is not set", key)
-	}
-
-	if value == "" {
-		log.Fatalf("Environment variable %s is empty", key)
-	}
-
-	return value
-}
-
 func timer(name string) func() {
 	start := time.Now()
 	return func() {
