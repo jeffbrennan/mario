@@ -39,14 +39,11 @@ func Summarize(nDays int, name string) {
 		log.Fatal(err)
 	}
 
-	datafactoryClientFactory, err = armdatafactory.NewClientFactory(
+	datafactoryClientFactory, _ = armdatafactory.NewClientFactory(
 		subscriptionID,
 		cred,
 		nil,
 	)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	pipelineRuns, _ := getPipelineRuns(
 		ctx,
@@ -158,15 +155,21 @@ func getPipelineRuns(
 		runsFrom.Format("2006-01-02"),
 		runsTo.Format("2006-01-02"),
 	)
-	pipelineRuns, _ := pipelineRunsClient.QueryByFactory(
+	pipelineRuns, err := pipelineRunsClient.QueryByFactory(
 		ctx,
 		resourceGroupName,
 		dataFactoryName,
 		runFilterParameters,
 		nil,
 	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return pipelineRuns, nil
 }
+
 func timer(name string) func() {
 	start := time.Now()
 	return func() {
