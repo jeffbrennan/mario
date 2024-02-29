@@ -9,6 +9,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/datafactory/armdatafactory/v3"
+	"github.com/fatih/color"
+	"github.com/rodaine/table"
 )
 
 var (
@@ -99,30 +101,33 @@ func summarizePipelineRuns(
 }
 
 func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
-	headerLength := 50
-	headerTitle := "Pipeline Summary"
-	headerSpace := (headerLength - len(headerTitle)) / 2
-	fmt.Println(
-		strings.Repeat("=", headerSpace),
-		headerTitle,
-		strings.Repeat("=", headerSpace),
+	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
+	columnFmt := color.New(color.FgYellow).SprintfFunc()
+
+	tbl := table.New(
+		"Pipeline",
+		"Success",
+		"Failed",
+		"In Progress",
+		"Avg Runtime (min)",
 	)
 
-	// TODO: make a table
+	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
+
 	for _, summary := range pipelineRunSummary {
 		summary.RuntimeAvgMin = summary.RuntimeTotalMin / float32(
 			summary.Success+summary.Failed,
 		)
-		fmt.Println(summary.PipelineName, "============")
-		fmt.Println("Success: ", summary.Success)
-		fmt.Println("Failed: ", summary.Failed)
-		fmt.Println("In Progress: ", summary.InProgress)
-		fmt.Println("Avg Runtime: ", summary.RuntimeAvgMin)
+		tbl.AddRow(
+			summary.PipelineName,
+			summary.Success,
+			summary.Failed,
+			summary.InProgress,
+			summary.RuntimeAvgMin,
+		)
 	}
 
-	summaryEnd := strings.Repeat("=", headerLength)
-	fmt.Println(summaryEnd)
-
+	tbl.Print()
 }
 
 func getPipelineRuns(
