@@ -2,14 +2,17 @@ package mario
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/datafactory/armdatafactory/v3"
 	"github.com/fatih/color"
+	"github.com/go-test/deep"
 	"github.com/rodaine/table"
 )
 
@@ -31,6 +34,65 @@ type Factory struct {
 	factoryName      string
 	factoryClient    *armdatafactory.ClientFactory
 	ctx              context.Context
+}
+
+func Compare(name1 string, name2 string) {
+	defer timer("Compare")()
+	factory := getFactoryClient()
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	pipelineChan := make(chan armdatafactory.PipelinesClientGetResponse, 2)
+
+	go getPipeline(name1, factory, pipelineChan, &wg)
+	go getPipeline(name2, factory, pipelineChan, &wg)
+
+	wg.Wait()
+	close(pipelineChan)
+
+	pipeline1 := <-pipelineChan
+	pipeline2 := <-pipelineChan
+
+	pipeline1Json, _ := pipeline1.MarshalJSON()
+	pipeline2Json, _ := pipeline2.MarshalJSON()
+
+	pipeline1Map := jsonToMap(string(pipeline1Json))
+	pipeline2Map := jsonToMap(string(pipeline2Json))
+
+	diff := deep.Equal(pipeline1Map, pipeline2Map)
+	fmt.Println(diff)
+
+}
+
+func jsonToMap(jsonStr string) map[string]interface{} {
+	result := make(map[string]interface{})
+	json.Unmarshal([]byte(jsonStr), &result)
+	return result
+}
+
+func getPipeline(
+	name string,
+	factory Factory,
+	pipelineChan chan armdatafactory.PipelinesClientGetResponse,
+	wg *sync.WaitGroup,
+) {
+	defer wg.Done()
+
+	pipelineClient := factory.factoryClient.NewPipelinesClient()
+	pipeline, err := pipelineClient.Get(
+		factory.ctx,
+		factory.resouceGroupName,
+		factory.factoryName,
+		name,
+		nil,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pipelineChan <- pipeline
 }
 
 func getFactoryClient() Factory {

@@ -7,6 +7,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/datafactory/armdatafactory/v3 v3.2.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.0
 	github.com/fatih/color v1.16.0
+	github.com/go-test/deep v1.1.0
 	github.com/hashicorp/hcl/v2 v2.19.1
 	github.com/rodaine/table v1.1.1
 	github.com/spf13/cobra v1.8.0
@@ -29,6 +30,7 @@ require (
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/zclconf/go-cty v1.13.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
