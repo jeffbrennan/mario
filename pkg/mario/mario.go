@@ -26,9 +26,14 @@ type PipelineRunSummary struct {
 	RuntimeAvgMin   float32
 }
 
-func Summarize(nDays int, name string) {
-	defer timer("Summarize")()
+type Factory struct {
+	resouceGroupName string
+	factoryName      string
+	factoryClient    *armdatafactory.ClientFactory
+	ctx              context.Context
+}
 
+func getFactoryClient() Factory {
 	azEnv := readConfig()
 	subscriptionID := azEnv.SubscriptionID
 	resourceGroupName := azEnv.ResourceGroupName
@@ -47,13 +52,20 @@ func Summarize(nDays int, name string) {
 		nil,
 	)
 
-	pipelineRuns, _ := getPipelineRuns(
-		ctx,
-		resourceGroupName,
-		dataFactoryName,
-		nDays,
-	)
+	return Factory{
+		resouceGroupName: resourceGroupName,
+		factoryName:      dataFactoryName,
+		factoryClient:    datafactoryClientFactory,
+		ctx:              ctx,
+	}
 
+}
+
+func Summarize(nDays int, name string) {
+	defer timer("Summarize")()
+	factory := getFactoryClient()
+
+	pipelineRuns, _ := getPipelineRuns(&factory, nDays)
 	pipelineSummary := summarizePipelineRuns(pipelineRuns)
 
 	if name == "" {
@@ -131,9 +143,7 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 }
 
 func getPipelineRuns(
-	ctx context.Context,
-	resourceGroupName string,
-	dataFactoryName string,
+	factory *Factory,
 	nDays int,
 ) (armdatafactory.PipelineRunsClientQueryByFactoryResponse, error) {
 
@@ -148,8 +158,6 @@ func getPipelineRuns(
 	runsFrom := time.Now().AddDate(0, 0, -nDays)
 	runsTo := time.Now()
 
-	pipelineRunsClient := datafactoryClientFactory.NewPipelineRunsClient()
-
 	runFilterParameters := armdatafactory.RunFilterParameters{
 		LastUpdatedAfter:  &runsFrom,
 		LastUpdatedBefore: &runsTo,
@@ -160,10 +168,13 @@ func getPipelineRuns(
 		runsFrom.Format("2006-01-02"),
 		runsTo.Format("2006-01-02"),
 	)
+
+	pipelineRunsClient := factory.factoryClient.NewPipelineRunsClient()
+
 	pipelineRuns, err := pipelineRunsClient.QueryByFactory(
-		ctx,
-		resourceGroupName,
-		dataFactoryName,
+		factory.ctx,
+		factory.resouceGroupName,
+		factory.factoryName,
 		runFilterParameters,
 		nil,
 	)
