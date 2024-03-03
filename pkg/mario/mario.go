@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/datafactory/armdatafactory/v3"
 	"github.com/fatih/color"
-	"github.com/go-test/deep"
 	"github.com/rodaine/table"
 )
 
@@ -31,6 +32,7 @@ type PipelineRunSummary struct {
 }
 
 type Factory struct {
+	subscriptionID   string
 	resouceGroupName string
 	factoryName      string
 	factoryClient    *armdatafactory.ClientFactory
@@ -38,31 +40,33 @@ type Factory struct {
 
 func Compare(name1 string, name2 string) {
 	defer timer("Compare")()
-	ctx := context.Background()
 	factory := getFactoryClient()
 
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
-	pipelineChan := make(chan armdatafactory.PipelinesClientGetResponse, 2)
+	// pipelineChan := make(chan armdatafactory.PipelinesClientGetResponse, 2)
+	pipelineChan := make(chan http.Response, 2)
+	go getPipelineHttp(factory, name1, pipelineChan, &wg)
+	go getPipelineHttp(factory, name2, pipelineChan, &wg)
 
-	go getPipeline(name1, factory, ctx, pipelineChan, &wg)
-	go getPipeline(name2, factory, ctx, pipelineChan, &wg)
+	// go getPipeline(name1, factory, ctx, pipelineChan, &wg)
+	// go getPipeline(name2, factory, ctx, pipelineChan, &wg)
 
 	wg.Wait()
 	close(pipelineChan)
 
-	pipeline1 := <-pipelineChan
-	pipeline2 := <-pipelineChan
+	<-pipelineChan
+	<-pipelineChan
 
-	pipeline1Json, _ := pipeline1.MarshalJSON()
-	pipeline2Json, _ := pipeline2.MarshalJSON()
+	// pipeline1Json, _ := pipeline1.MarshalJSON()
+	// pipeline2Json, _ := pipeline2.MarshalJSON()
 
-	pipeline1Map := jsonToMap(string(pipeline1Json))
-	pipeline2Map := jsonToMap(string(pipeline2Json))
+	// pipeline1Map := jsonToMap(string(pipeline1Json))
+	// pipeline2Map := jsonToMap(string(pipeline2Json))
 
-	diff := deep.Equal(pipeline1Map, pipeline2Map)
-	fmt.Println(diff)
+	// diff := deep.Equal(pipeline1Map, pipeline2Map)
+	// fmt.Println(diff)
 
 }
 
@@ -70,6 +74,56 @@ func jsonToMap(jsonStr string) map[string]interface{} {
 	result := make(map[string]interface{})
 	json.Unmarshal([]byte(jsonStr), &result)
 	return result
+}
+
+func getPipelineHttp(
+	factory Factory,
+	pipelineName string,
+	pipelineChan chan http.Response,
+	wg *sync.WaitGroup,
+) {
+	defer timer("getPipelineHttp")
+	defer wg.Done()
+	requestString := fmt.Sprintf(
+		"https://management.azure.com/subscriptions/%s/resourceGroups/%s/providers/Microsoft.DataFactory/factories/%s/pipelines/%s?api-version=2018-06-01",
+		factory.subscriptionID,
+		factory.resouceGroupName,
+		factory.factoryName,
+		pipelineName,
+	)
+	req, err := http.NewRequest("GET", requestString, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	token, err := cred.GetToken(
+		context.TODO(),
+		policy.TokenRequestOptions{
+			Scopes: []string{"https://management.azure.com/.default"},
+		},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token.Token)
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(resp)
+
+	pipelineChan <- *resp
+
 }
 
 func getPipeline(
@@ -117,6 +171,7 @@ func getFactoryClient() Factory {
 	)
 
 	return Factory{
+		subscriptionID:   subscriptionID,
 		resouceGroupName: resourceGroupName,
 		factoryName:      dataFactoryName,
 		factoryClient:    datafactoryClientFactory,
