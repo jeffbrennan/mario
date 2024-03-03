@@ -1,12 +1,11 @@
-package compare
+package cmd
 
 import (
-	"github.com/jeffbrennan/mario/cmd"
 	"github.com/jeffbrennan/mario/pkg/mario"
 	"github.com/spf13/cobra"
 )
 
-var compareCmd = &cobra.Command{
+var CompareCmd = &cobra.Command{
 	Use:   "compare",
 	Short: "compare the contents of two pipelines",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -17,9 +16,9 @@ var compareCmd = &cobra.Command{
 }
 
 func init() {
-	cmd.RootCmd.AddCommand(compareCmd)
-	compareCmd.PersistentFlags().
+	RootCmd.AddCommand(CompareCmd)
+	CompareCmd.PersistentFlags().
 		String("name1", "", "the first pipeline to compare")
-	compareCmd.PersistentFlags().
+	CompareCmd.PersistentFlags().
 		String("name2", "", "the second pipeline to compare")
 }

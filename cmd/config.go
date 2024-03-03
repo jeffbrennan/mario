@@ -1,7 +1,6 @@
-package config
+package cmd
 
 import (
-	"github.com/jeffbrennan/mario/cmd"
 	"github.com/jeffbrennan/mario/pkg/mario"
 	"github.com/spf13/cobra"
 )
@@ -15,6 +14,6 @@ var configCmd = &cobra.Command{
 }
 
 func init() {
-	cmd.RootCmd.AddCommand(configCmd)
+	RootCmd.AddCommand(configCmd)
 
 }
