@@ -93,28 +93,15 @@ func printDiffOutput(
 
 	check := color.New(color.FgGreen).SprintFunc()
 	cross := color.New(color.FgRed).SprintFunc()
+	headerLength := 80
 
 	pipeline1Color := color.New(color.FgYellow).SprintFunc()
 	pipeline2Color := color.New(color.FgCyan).SprintFunc()
 
-	headerLength := 50
-	headerTitle := "COMPARE"
-	headerTitleLength := utf8.RuneCountInString(headerTitle)
-	spacerLengthStart := ((headerLength - headerTitleLength) / 2) - 1
-	spacerLengthEnd := spacerLengthStart
-	if spacerLengthStart*2 < headerLength-headerTitleLength {
-		spacerLengthStart++
-	}
+	header := createHeader("COMPARE", headerLength, color.New(color.FgBlue), "=", true)
+	footer := createHeader("", headerLength, color.New(color.FgWhite), "=", true)
 
-	fmt.Print(
-		"\n",
-		strings.Repeat("=", spacerLengthStart),
-		" ",
-		check(headerTitle),
-		" ",
-		strings.Repeat("=", spacerLengthEnd),
-		"\n",
-	)
+	fmt.Print("\n", header, "\n")
 
 	if differencesExist {
 		fmt.Println(
@@ -128,8 +115,7 @@ func printDiffOutput(
 	} else {
 		fmt.Println("[", check("\u2714"), "]", pipeline1Color(name1), "|", pipeline2Color(name2))
 		fmt.Println(check("No differences found"))
-		fmt.Println(strings.Repeat("=", headerLength))
-
+		fmt.Println(footer)
 		return
 	}
 
@@ -156,19 +142,21 @@ func printDiffOutput(
 		) + "/" + strconv.Itoa(
 			len(diff),
 		) + "]"
-		diffMessageLength := utf8.RuneCountInString(diffMessage)
 
-		fmt.Print(
+		diffHeader := createHeader(
 			diffMessage,
-			strings.Repeat("-", headerLength-diffMessageLength),
+			headerLength,
+			color.New(color.FgWhite),
+			"-",
+			false,
 		)
+		fmt.Print(diffHeader)
 
 		fmt.Print("\n", strings.Join(location, "\n"))
-		fmt.Print(":", valueFormatted, "\n")
+		fmt.Print(":", valueFormatted, "\n\n")
 
 	}
-
-	fmt.Println(strings.Repeat("=", headerLength))
+	fmt.Println(footer)
 }
 
 func formatDiff(diff []string, keysToExclude []string) []string {
@@ -404,7 +392,13 @@ func summarizePipelineRuns(
 
 func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 	defer timer("printPipelineRunSummary")()
-	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
+	headerLength := 80
+
+	header := createHeader("SUMMARIZE", headerLength, color.New(color.FgHiCyan), "=", true)
+	footer := createHeader("", headerLength, color.New(color.FgHiCyan), "=", true)
+	fmt.Print("\n", header, "\n")
+
+	headerFmt := color.New(color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgYellow).SprintfFunc()
 
 	tbl := table.New(
@@ -431,6 +425,8 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 	}
 
 	tbl.Print()
+
+	fmt.Println(footer)
 }
 
 func getPipelineRuns(
@@ -478,6 +474,49 @@ func getPipelineRuns(
 	}
 
 	return pipelineRuns, nil
+}
+
+func createHeader(
+	headerTitle string,
+	headerLength int,
+	headerColor *color.Color,
+	spacerChar string,
+	centerHeader bool,
+) string {
+	headerTitleLength := utf8.RuneCountInString(headerTitle)
+	header := headerColor.SprintFunc()
+
+	if headerTitle == "" {
+		return strings.Repeat(spacerChar, headerLength)
+	}
+
+	if centerHeader {
+		spacerLengthStart := ((headerLength - headerTitleLength) / 2) - 1
+		spacerLengthEnd := spacerLengthStart
+		if spacerLengthStart*2 < headerLength-headerTitleLength {
+			spacerLengthStart++
+		}
+
+		return strings.Repeat(
+			spacerChar,
+			spacerLengthStart,
+		) + " " + header(
+			headerTitle,
+		) + " " + strings.Repeat(
+			spacerChar,
+			spacerLengthEnd,
+		)
+
+	}
+
+	spacerLength := headerLength - headerTitleLength
+	return header(
+		headerTitle,
+	) + " " + strings.Repeat(
+		spacerChar,
+		spacerLength-1,
+	)
+
 }
 
 func timer(name string) func() {
