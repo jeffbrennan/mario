@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -57,8 +58,14 @@ func Compare(name1 string, name2 string) {
 	pipeline1 := <-pipelineChan
 	pipeline2 := <-pipelineChan
 
-	pipeline1Map := parsePipeline(pipeline1, []string{"id", "etag", "name", "type"})
-	pipeline2Map := parsePipeline(pipeline2, []string{"id", "etag", "name", "type"})
+	pipeline1Map := parsePipeline(
+		pipeline1,
+		[]string{"id", "etag", "name", "type"},
+	)
+	pipeline2Map := parsePipeline(
+		pipeline2,
+		[]string{"id", "etag", "name", "type"},
+	)
 
 	// try out different equality checks
 	diffRaw := deep.Equal(pipeline1Map, pipeline2Map)
@@ -66,7 +73,10 @@ func Compare(name1 string, name2 string) {
 
 	var diff []string
 	if differencesExist {
-		diff = formatDiff(diffRaw, []string{"properties", "activities", "slice"})
+		diff = formatDiff(
+			diffRaw,
+			[]string{"properties", "activities", "slice"},
+		)
 	} else {
 		diff = []string{"No differences found"}
 	}
@@ -74,43 +84,97 @@ func Compare(name1 string, name2 string) {
 	printDiffOutput(diff, differencesExist, name1, name2)
 }
 
-func printDiffOutput(diff []string, differencesExist bool, name1 string, name2 string) {
+func printDiffOutput(
+	diff []string,
+	differencesExist bool,
+	name1 string,
+	name2 string,
+) {
 
 	check := color.New(color.FgGreen).SprintFunc()
 	cross := color.New(color.FgRed).SprintFunc()
 
-	headerLength := 50
-	headerTitle := "Comparison Results"
-	headerTitleLength := utf8.RuneCountInString(headerTitle)
+	pipeline1Color := color.New(color.FgYellow).SprintFunc()
+	pipeline2Color := color.New(color.FgCyan).SprintFunc()
 
-	header := color.New(color.FgGreen, color.Underline).SprintFunc()
-	fmt.Println(header(headerTitle), strings.Repeat("=", headerLength-headerTitleLength))
+	headerLength := 50
+	headerTitle := "COMPARE"
+	headerTitleLength := utf8.RuneCountInString(headerTitle)
+	spacerLengthStart := ((headerLength - headerTitleLength) / 2) - 1
+	spacerLengthEnd := spacerLengthStart
+	if spacerLengthStart*2 < headerLength-headerTitleLength {
+		spacerLengthStart++
+	}
+
+	fmt.Print(
+		"\n",
+		strings.Repeat("=", spacerLengthStart),
+		" ",
+		check(headerTitle),
+		" ",
+		strings.Repeat("=", spacerLengthEnd),
+		"\n",
+	)
 
 	if differencesExist {
-		fmt.Println("[", cross("\u2718"), "]", name1, "|", name2)
+		fmt.Println(
+			"[",
+			cross("\u2718"),
+			"]",
+			pipeline1Color(name1),
+			"|",
+			pipeline2Color(name2),
+		)
 	} else {
-		fmt.Println("[", check("\u2714"), "]", name1, "|", name2)
+		fmt.Println("[", check("\u2714"), "]", pipeline1Color(name1), "|", pipeline2Color(name2))
 		fmt.Println(check("No differences found"))
+		fmt.Println(strings.Repeat("=", headerLength))
+
 		return
 	}
 
-	headerMessageText := "Differences found"
-	headerMessage := cross(headerMessageText)
+	fmt.Print("\n", cross("Differences found"), "\n")
+	for i, d := range diff {
+		diffSplit := strings.Split(d, "\n")
 
-	messageLength := utf8.RuneCountInString(headerMessageText)
-	fmt.Println(headerMessage, strings.Repeat("-", headerLength-messageLength))
+		location := diffSplit[:len(diffSplit)-1]
+		value := diffSplit[len(diffSplit)-1]
+		value = strings.Trim(value, " ")
 
-	for _, d := range diff {
-		fmt.Print(d)
+		valueSplit := strings.Split(value, "!=")
+
+		value1 := valueSplit[1]
+		value2 := valueSplit[0]
+		valueFormatted := pipeline1Color(
+			value1,
+		) + " != " + pipeline2Color(
+			value2,
+		)
+
+		diffMessage := "[" + strconv.Itoa(
+			i+1,
+		) + "/" + strconv.Itoa(
+			len(diff),
+		) + "]"
+		diffMessageLength := utf8.RuneCountInString(diffMessage)
+
+		fmt.Print(
+			diffMessage,
+			strings.Repeat("-", headerLength-diffMessageLength),
+		)
+
+		fmt.Print("\n", strings.Join(location, "\n"))
+		fmt.Print(":", valueFormatted, "\n")
+
 	}
 
-	fmt.Println("\n", strings.Repeat("=", headerLength))
+	fmt.Println(strings.Repeat("=", headerLength))
 }
 
 func formatDiff(diff []string, keysToExclude []string) []string {
 	formattedDiff := make([]string, len(diff))
 
-	for _, d := range diff {
+	for i, d := range diff {
 		diffSplit := strings.Split(d, ": ")
 		location := diffSplit[0]
 		locationParts := strings.Split(location, ".")
@@ -148,19 +212,25 @@ func formatDiff(diff []string, keysToExclude []string) []string {
 
 		value := diffSplit[1]
 		formattedValue := strings.Repeat(" ", len(formattedParts)*2) + value
-		formattedDiff = append(formattedDiff, fmt.Sprintf("%s%s", formattedPartsString, formattedValue))
+		formattedDiff[i] = formattedPartsString + formattedValue
 	}
 	return formattedDiff
 }
 
-func parsePipeline(pipeline armdatafactory.PipelinesClientGetResponse, keysToDrop []string) map[string]interface{} {
+func parsePipeline(
+	pipeline armdatafactory.PipelinesClientGetResponse,
+	keysToDrop []string,
+) map[string]interface{} {
 	pipelineJson, _ := pipeline.MarshalJSON()
 	pipelineMap := jsonToMap(string(pipelineJson))
 	pipelineMapClean := cleanMap(pipelineMap, keysToDrop)
 	return pipelineMapClean
 }
 
-func cleanMap(m map[string]interface{}, keysToDrop []string) map[string]interface{} {
+func cleanMap(
+	m map[string]interface{},
+	keysToDrop []string,
+) map[string]interface{} {
 	for _, key := range keysToDrop {
 		delete(m, key)
 	}
