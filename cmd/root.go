@@ -61,7 +61,7 @@ func startPersistentProcess() {
 					CompareCmd.Run(CompareCmd, nil)
 
 				case "exit":
-					os.Exit(0)
+					exitCmd.Run(exitCmd, nil)
 
 				default:
 					fmt.Println("Unknown command. Try again.")
