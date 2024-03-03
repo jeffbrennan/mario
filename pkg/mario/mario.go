@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -121,6 +122,10 @@ func getFactoryClient() Factory {
 		ctx:              ctx,
 	}
 
+}
+
+func Exit() {
+	os.Exit(0)
 }
 
 func Summarize(nDays int, name string) {
