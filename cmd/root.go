@@ -16,7 +16,6 @@ var RootCmd = &cobra.Command{
 	Use:   "mario",
 	Short: "Mario - an ADF monitoring tool",
 	Run: func(cmd *cobra.Command, args []string) {
-		startPersistentProcess()
 	},
 }
 
