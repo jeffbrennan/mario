@@ -53,12 +53,12 @@ func startPersistentProcess() {
 
 				switch command {
 				case "summarize":
-					SummarizeCmd.ParseFlags(args)
-					SummarizeCmd.Run(SummarizeCmd, nil)
+					summarizeCmd.ParseFlags(args)
+					summarizeCmd.Run(summarizeCmd, nil)
 
 				case "compare":
-					CompareCmd.ParseFlags(args)
-					CompareCmd.Run(CompareCmd, nil)
+					compareCmd.ParseFlags(args)
+					compareCmd.Run(compareCmd, nil)
 
 				case "exit":
 					exitCmd.Run(exitCmd, nil)

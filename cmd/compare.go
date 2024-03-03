@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var CompareCmd = &cobra.Command{
+var compareCmd = &cobra.Command{
 	Use:   "compare",
 	Short: "compare the contents of two pipelines",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -16,9 +16,9 @@ var CompareCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(CompareCmd)
-	CompareCmd.PersistentFlags().
+	RootCmd.AddCommand(compareCmd)
+	compareCmd.PersistentFlags().
 		String("name1", "", "the first pipeline to compare")
-	CompareCmd.PersistentFlags().
+	compareCmd.PersistentFlags().
 		String("name2", "", "the second pipeline to compare")
 }
