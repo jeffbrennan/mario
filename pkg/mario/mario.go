@@ -34,11 +34,11 @@ type Factory struct {
 	resouceGroupName string
 	factoryName      string
 	factoryClient    *armdatafactory.ClientFactory
-	ctx              context.Context
 }
 
 func Compare(name1 string, name2 string) {
 	defer timer("Compare")()
+	ctx := context.Background()
 	factory := getFactoryClient()
 
 	wg := sync.WaitGroup{}
@@ -46,8 +46,8 @@ func Compare(name1 string, name2 string) {
 
 	pipelineChan := make(chan armdatafactory.PipelinesClientGetResponse, 2)
 
-	go getPipeline(name1, factory, pipelineChan, &wg)
-	go getPipeline(name2, factory, pipelineChan, &wg)
+	go getPipeline(name1, factory, ctx, pipelineChan, &wg)
+	go getPipeline(name2, factory, ctx, pipelineChan, &wg)
 
 	wg.Wait()
 	close(pipelineChan)
@@ -75,6 +75,7 @@ func jsonToMap(jsonStr string) map[string]interface{} {
 func getPipeline(
 	name string,
 	factory Factory,
+	ctx context.Context,
 	pipelineChan chan armdatafactory.PipelinesClientGetResponse,
 	wg *sync.WaitGroup,
 ) {
@@ -82,7 +83,7 @@ func getPipeline(
 
 	pipelineClient := factory.factoryClient.NewPipelinesClient()
 	pipeline, err := pipelineClient.Get(
-		factory.ctx,
+		ctx,
 		factory.resouceGroupName,
 		factory.factoryName,
 		name,
@@ -102,8 +103,6 @@ func getFactoryClient() Factory {
 	resourceGroupName := azEnv.ResourceGroupName
 	dataFactoryName := azEnv.DataFactoryName
 
-	ctx := context.Background()
-
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		log.Fatal(err)
@@ -119,7 +118,6 @@ func getFactoryClient() Factory {
 		resouceGroupName: resourceGroupName,
 		factoryName:      dataFactoryName,
 		factoryClient:    datafactoryClientFactory,
-		ctx:              ctx,
 	}
 
 }
@@ -131,8 +129,9 @@ func Exit() {
 func Summarize(nDays int, name string) {
 	defer timer("Summarize")()
 	factory := getFactoryClient()
+	ctx := context.Background()
 
-	pipelineRuns, _ := getPipelineRuns(&factory, nDays)
+	pipelineRuns, _ := getPipelineRuns(&factory, ctx, nDays)
 	pipelineSummary := summarizePipelineRuns(pipelineRuns)
 
 	if name == "" {
@@ -211,6 +210,7 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 
 func getPipelineRuns(
 	factory *Factory,
+	ctx context.Context,
 	nDays int,
 ) (armdatafactory.PipelineRunsClientQueryByFactoryResponse, error) {
 
@@ -239,7 +239,7 @@ func getPipelineRuns(
 	pipelineRunsClient := factory.factoryClient.NewPipelineRunsClient()
 
 	pipelineRuns, err := pipelineRunsClient.QueryByFactory(
-		factory.ctx,
+		ctx,
 		factory.resouceGroupName,
 		factory.factoryName,
 		runFilterParameters,
