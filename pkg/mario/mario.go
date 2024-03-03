@@ -36,24 +36,6 @@ type Factory struct {
 	ctx              context.Context
 }
 
-func CompareSequential(name1 string, name2 string) {
-	defer timer("Compare")()
-	factory := getFactoryClient()
-
-	pipeline1 := getPipelineSequential(name1, factory)
-	pipeline2 := getPipelineSequential(name2, factory)
-
-	pipeline1Json, _ := pipeline1.MarshalJSON()
-	pipeline2Json, _ := pipeline2.MarshalJSON()
-
-	pipeline1Map := jsonToMap(string(pipeline1Json))
-	pipeline2Map := jsonToMap(string(pipeline2Json))
-
-	diff := deep.Equal(pipeline1Map, pipeline2Map)
-	fmt.Println(diff)
-
-}
-
 func Compare(name1 string, name2 string) {
 	defer timer("Compare")()
 	factory := getFactoryClient()
@@ -111,27 +93,6 @@ func getPipeline(
 	}
 
 	pipelineChan <- pipeline
-}
-
-func getPipelineSequential(
-	name string,
-	factory Factory,
-) armdatafactory.PipelinesClientGetResponse {
-
-	pipelineClient := factory.factoryClient.NewPipelinesClient()
-	pipeline, err := pipelineClient.Get(
-		factory.ctx,
-		factory.resouceGroupName,
-		factory.factoryName,
-		name,
-		nil,
-	)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return pipeline
 }
 
 func getFactoryClient() Factory {
