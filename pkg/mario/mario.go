@@ -394,7 +394,7 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 	defer timer("printPipelineRunSummary")()
 	headerLength := 80
 
-	header := createHeader("SUMMARIZE", headerLength, color.New(color.FgHiCyan), "=", true)
+	header := createHeader("SUMMARIZE", headerLength, color.New(color.FgBlue), "=", true)
 	footer := createHeader("", headerLength, color.New(color.FgHiCyan), "=", true)
 	fmt.Print("\n", header, "\n")
 
