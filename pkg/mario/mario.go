@@ -15,6 +15,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/datafactory/armdatafactory/v3"
 	"github.com/fatih/color"
+	"github.com/go-test/deep"
 	"github.com/rodaine/table"
 )
 
@@ -41,33 +42,41 @@ type Factory struct {
 func Compare(name1 string, name2 string) {
 	defer timer("Compare")()
 	factory := getFactoryClient()
-
+	ctx := context.Background()
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
-	// pipelineChan := make(chan armdatafactory.PipelinesClientGetResponse, 2)
-	pipelineChan := make(chan http.Response, 2)
-	go getPipelineHttp(factory, name1, pipelineChan, &wg)
-	go getPipelineHttp(factory, name2, pipelineChan, &wg)
-
-	// go getPipeline(name1, factory, ctx, pipelineChan, &wg)
-	// go getPipeline(name2, factory, ctx, pipelineChan, &wg)
+	pipelineChan := make(chan armdatafactory.PipelinesClientGetResponse, 2)
+	go getPipeline(name1, factory, ctx, pipelineChan, &wg)
+	go getPipeline(name2, factory, ctx, pipelineChan, &wg)
 
 	wg.Wait()
 	close(pipelineChan)
 
-	<-pipelineChan
-	<-pipelineChan
+	pipeline1 := <-pipelineChan
+	pipeline2 := <-pipelineChan
 
-	// pipeline1Json, _ := pipeline1.MarshalJSON()
-	// pipeline2Json, _ := pipeline2.MarshalJSON()
+	pipeline1Map := parsePipeline(pipeline1, []string{"id", "etag", "name", "type"})
+	pipeline2Map := parsePipeline(pipeline2, []string{"id", "etag", "name", "type"})
 
-	// pipeline1Map := jsonToMap(string(pipeline1Json))
-	// pipeline2Map := jsonToMap(string(pipeline2Json))
+	// try out different equality checks
+	diff := deep.Equal(pipeline1Map, pipeline2Map)
+	fmt.Println(diff)
 
-	// diff := deep.Equal(pipeline1Map, pipeline2Map)
-	// fmt.Println(diff)
+}
 
+func parsePipeline(pipeline armdatafactory.PipelinesClientGetResponse, keysToDrop []string) map[string]interface{} {
+	pipelineJson, _ := pipeline.MarshalJSON()
+	pipelineMap := jsonToMap(string(pipelineJson))
+	pipelineMapClean := cleanMap(pipelineMap, keysToDrop)
+	return pipelineMapClean
+}
+
+func cleanMap(m map[string]interface{}, keysToDrop []string) map[string]interface{} {
+	for _, key := range keysToDrop {
+		delete(m, key)
+	}
+	return m
 }
 
 func jsonToMap(jsonStr string) map[string]interface{} {
