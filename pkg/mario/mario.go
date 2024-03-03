@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -60,9 +61,96 @@ func Compare(name1 string, name2 string) {
 	pipeline2Map := parsePipeline(pipeline2, []string{"id", "etag", "name", "type"})
 
 	// try out different equality checks
-	diff := deep.Equal(pipeline1Map, pipeline2Map)
-	fmt.Println(diff)
+	diffRaw := deep.Equal(pipeline1Map, pipeline2Map)
+	differencesExist := diffRaw != nil
 
+	var diff []string
+	if differencesExist {
+		diff = formatDiff(diffRaw, []string{"properties", "activities", "slice"})
+	} else {
+		diff = []string{"No differences found"}
+	}
+
+	printDiffOutput(diff, differencesExist, name1, name2)
+}
+
+func printDiffOutput(diff []string, differencesExist bool, name1 string, name2 string) {
+
+	check := color.New(color.FgGreen).SprintFunc()
+	cross := color.New(color.FgRed).SprintFunc()
+
+	headerLength := 50
+	headerTitle := "Comparison Results"
+	headerTitleLength := utf8.RuneCountInString(headerTitle)
+
+	header := color.New(color.FgGreen, color.Underline).SprintFunc()
+	fmt.Println(header(headerTitle), strings.Repeat("=", headerLength-headerTitleLength))
+
+	if differencesExist {
+		fmt.Println("[", cross("\u2718"), "]", name1, "|", name2)
+	} else {
+		fmt.Println("[", check("\u2714"), "]", name1, "|", name2)
+		fmt.Println(check("No differences found"))
+		return
+	}
+
+	headerMessageText := "Differences found"
+	headerMessage := cross(headerMessageText)
+
+	messageLength := utf8.RuneCountInString(headerMessageText)
+	fmt.Println(headerMessage, strings.Repeat("-", headerLength-messageLength))
+
+	for _, d := range diff {
+		fmt.Print(d)
+	}
+
+	fmt.Println("\n", strings.Repeat("=", headerLength))
+}
+
+func formatDiff(diff []string, keysToExclude []string) []string {
+	formattedDiff := make([]string, len(diff))
+
+	for _, d := range diff {
+		diffSplit := strings.Split(d, ": ")
+		location := diffSplit[0]
+		locationParts := strings.Split(location, ".")
+
+		formattedPartsRaw := make([]string, len(locationParts))
+		// initial string cleaning
+		for i, part := range locationParts {
+			formattedPart := strings.Replace(part, "]", "", -1)
+			formattedPart = strings.Replace(formattedPart, "map[", "", -1)
+			formattedPart = strings.Replace(formattedPart, "[", "", -1)
+			formattedPartsRaw[i] = formattedPart
+		}
+
+		// remove keys that we don't want to show
+		formattedParts := []string{}
+		for _, part := range formattedPartsRaw {
+			for _, key := range keysToExclude {
+				if strings.Contains(part, key) {
+					part = ""
+				}
+			}
+			if part == "" {
+				continue
+			}
+			formattedParts = append(formattedParts, part)
+		}
+
+		// add indentation based on the depth of the key
+		for i, part := range formattedParts {
+			part = strings.Repeat(" ", i*2) + part + "\n"
+			formattedParts[i] = part
+		}
+
+		formattedPartsString := strings.Join(formattedParts, "")
+
+		value := diffSplit[1]
+		formattedValue := strings.Repeat(" ", len(formattedParts)*2) + value
+		formattedDiff = append(formattedDiff, fmt.Sprintf("%s%s", formattedPartsString, formattedValue))
+	}
+	return formattedDiff
 }
 
 func parsePipeline(pipeline armdatafactory.PipelinesClientGetResponse, keysToDrop []string) map[string]interface{} {
