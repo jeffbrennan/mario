@@ -52,6 +52,7 @@ func writeConfig(azEnv AZEnv) {
 }
 
 func readConfig() AZEnv {
+	defer timer("readConfig")()
 	f, err := os.Open(".mariocfg")
 	if err != nil {
 		log.Fatal(err)

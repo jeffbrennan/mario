@@ -79,6 +79,7 @@ func getPipeline(
 	pipelineChan chan armdatafactory.PipelinesClientGetResponse,
 	wg *sync.WaitGroup,
 ) {
+	defer timer("getPipeline")()
 	defer wg.Done()
 
 	pipelineClient := factory.factoryClient.NewPipelinesClient()
@@ -98,6 +99,7 @@ func getPipeline(
 }
 
 func getFactoryClient() Factory {
+	defer timer("getFactoryClient")()
 	azEnv := readConfig()
 	subscriptionID := azEnv.SubscriptionID
 	resourceGroupName := azEnv.ResourceGroupName
@@ -152,7 +154,7 @@ func Summarize(nDays int, name string) {
 func summarizePipelineRuns(
 	runs armdatafactory.PipelineRunsClientQueryByFactoryResponse,
 ) map[string]PipelineRunSummary {
-
+	defer timer("summarizePipelineRuns")()
 	pipelineRunSummary := make(map[string]PipelineRunSummary)
 	for _, run := range runs.Value {
 		summary, exists := pipelineRunSummary[*run.PipelineName]
@@ -179,6 +181,7 @@ func summarizePipelineRuns(
 }
 
 func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
+	defer timer("printPipelineRunSummary")()
 	headerFmt := color.New(color.FgGreen, color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgYellow).SprintfFunc()
 
@@ -213,7 +216,7 @@ func getPipelineRuns(
 	ctx context.Context,
 	nDays int,
 ) (armdatafactory.PipelineRunsClientQueryByFactoryResponse, error) {
-
+	defer timer("getPipelineRuns")()
 	if nDays < 1 {
 		log.Fatalf("nDays must be greater than 0")
 	}
@@ -237,7 +240,7 @@ func getPipelineRuns(
 	)
 
 	pipelineRunsClient := factory.factoryClient.NewPipelineRunsClient()
-
+	query_start := time.Now()
 	pipelineRuns, err := pipelineRunsClient.QueryByFactory(
 		ctx,
 		factory.resouceGroupName,
@@ -245,6 +248,8 @@ func getPipelineRuns(
 		runFilterParameters,
 		nil,
 	)
+
+	log.Printf("Query took %v", time.Since(query_start))
 
 	if err != nil {
 		log.Fatal(err)
