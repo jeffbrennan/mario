@@ -53,9 +53,13 @@ func Shell() {
 
 				switch command {
 				case "summarize":
-					summarizeCmd.ParseFlags(args)
-					summarizeCmd.Run(summarizeCmd, nil)
-
+					subCommand := args[0]
+					args = args[1:]
+					switch subCommand {
+					case "runs":
+						summarizeRunsCmd.ParseFlags(args)
+						summarizeRunsCmd.Run(summarizeRunsCmd, nil)
+					}
 				case "compare":
 					compareCmd.ParseFlags(args)
 					compareCmd.Run(compareCmd, nil)
