@@ -8,6 +8,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/datafactory/armdatafactory/v3 v3.2.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.3.0
 	github.com/fatih/color v1.16.0
+	github.com/go-test/deep v1.1.0
 	github.com/hashicorp/hcl/v2 v2.19.1
 	github.com/rodaine/table v1.1.1
 	github.com/spf13/cobra v1.8.0
@@ -19,7 +20,6 @@ require (
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
-	github.com/go-test/deep v1.1.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
