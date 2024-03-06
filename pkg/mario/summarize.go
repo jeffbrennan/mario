@@ -294,7 +294,6 @@ func getPipelineRuns(
 	)
 
 	pipelineRunsClient := factory.factoryClient.NewPipelineRunsClient()
-	query_start := time.Now()
 	pipelineRuns, err := pipelineRunsClient.QueryByFactory(
 		ctx,
 		factory.resouceGroupName,
