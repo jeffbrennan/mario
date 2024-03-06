@@ -157,7 +157,7 @@ func SummarizeRuns(nDays int, name string) {
 	factory := getFactoryClient()
 	ctx := context.Background()
 
-	pipelineRuns, _ := getPipelineRuns(&factory, ctx, nDays)
+	pipelineRuns, _ := getPipelineRuns(&factory, ctx, nDays, "")
 	pipelineSummary := summarizePipelineRuns(pipelineRuns)
 
 	if name == "" {
@@ -305,6 +305,7 @@ func getPipelineRuns(
 	factory *Factory,
 	ctx context.Context,
 	nDays int,
+	name string,
 ) (armdatafactory.PipelineRunsClientQueryByFactoryResponse, error) {
 	defer timer("getPipelineRuns")()
 	if nDays < 1 {
@@ -323,6 +324,24 @@ func getPipelineRuns(
 	runFilterParameters := armdatafactory.RunFilterParameters{
 		LastUpdatedAfter:  &runsFrom,
 		LastUpdatedBefore: &runsTo,
+	}
+
+	if name != "" {
+		operand := armdatafactory.RunQueryFilterOperandPipelineName
+		operator := armdatafactory.RunQueryFilterOperatorEquals
+		nameFilter := make([]*string, 1)
+		nameFilter[0] = &name
+		filter := armdatafactory.RunQueryFilter{
+			Operand:  &operand,
+			Operator: &operator,
+			Values:   nameFilter,
+		}
+
+		runFilterParameters = armdatafactory.RunFilterParameters{
+			LastUpdatedAfter:  &runsFrom,
+			LastUpdatedBefore: &runsTo,
+			Filters:           []*armdatafactory.RunQueryFilter{&filter},
+		}
 	}
 
 	log.Printf(
