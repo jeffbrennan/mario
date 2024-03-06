@@ -11,7 +11,7 @@ var summarizeRunsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		nDays, _ := cmd.Flags().GetInt("days")
 		name, _ := cmd.Flags().GetString("name")
-		mario.Summarize(nDays, name)
+		mario.SummarizeRuns(nDays, name)
 	},
 }
 

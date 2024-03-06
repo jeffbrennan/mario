@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"slices"
 	"strings"
 	"time"
 
@@ -12,8 +13,130 @@ import (
 	"github.com/rodaine/table"
 )
 
-func Summarize(nDays int, name string) {
-	defer timer("Summarize")()
+type FactoryPipelineSummary struct {
+	factoryName           string
+	folder                string
+	nPipelines            int
+	nActivities           int
+	nCopyActivities       int
+	nDatabricksActivities int
+}
+
+func SummarizePipelines() {
+	defer timer("SummarizePipelines")()
+	factory := getFactoryClient()
+	ctx := context.Background()
+
+	pipelines := getAllPipelines(&factory, ctx)
+	pipelineDetailsSummary := summarizePipelineDetails(factory, pipelines)
+	printPipelineDetailsSummary(pipelineDetailsSummary)
+}
+
+func printPipelineDetailsSummary(pipelineSummary []FactoryPipelineSummary) {
+
+	defer timer("printPipelineRunSummary")()
+	headerLength := 80
+
+	header := createHeader("SUMMARIZE", headerLength, color.New(color.FgBlue), "=", true)
+	footer := createHeader("", headerLength, color.New(color.FgHiCyan), "=", true)
+	fmt.Print("\n", header, "\n")
+
+	headerFmt := color.New(color.Underline).SprintfFunc()
+	columnFmt := color.New(color.FgYellow).SprintfFunc()
+
+	tbl := table.New(
+		"Factory",
+		"Folder",
+		"Pipelines",
+		"Activities",
+		"copy",
+		"databricks",
+	)
+
+	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
+
+	for _, summary := range pipelineSummary {
+		tbl.AddRow(
+			summary.factoryName,
+			summary.folder,
+			summary.nPipelines,
+			summary.nActivities,
+			summary.nCopyActivities,
+			summary.nDatabricksActivities,
+		)
+	}
+
+	tbl.Print()
+
+	fmt.Println(footer)
+}
+
+func summarizePipelineDetails(factory Factory, pipelines []*armdatafactory.PipelineResource) []FactoryPipelineSummary {
+	defer timer("summarizePipelineDetails")()
+
+	pipelineSummary := []FactoryPipelineSummary{}
+	uniqueFolders := []string{}
+	pipelinesByFolder := make(map[string][]armdatafactory.PipelineResource)
+
+	for _, pipeline := range pipelines {
+		pipelineFolder := ""
+		pipelineFolderPointer := pipeline.Properties.Folder
+		if pipelineFolderPointer == nil {
+			pipelineFolder = "root"
+		} else {
+			pipelineFolder = *pipelineFolderPointer.Name
+		}
+
+		if !slices.Contains(uniqueFolders, pipelineFolder) {
+			// add folder to map for the first time
+			pipelinesByFolder[pipelineFolder] = []armdatafactory.PipelineResource{*pipeline}
+			uniqueFolders = append(uniqueFolders, pipelineFolder)
+		} else {
+			// append to existing folder
+			pipelinesByFolder[pipelineFolder] = append(pipelinesByFolder[pipelineFolder], *pipeline)
+		}
+	}
+
+	for folder, folderPipelines := range pipelinesByFolder {
+		nPipelines := len(folderPipelines)
+
+		nActivities := 0
+		nCopyActivities := 0
+		nDatabricksActivities := 0
+
+		for _, pipeline := range folderPipelines {
+			if pipeline.Properties.Activities == nil {
+				continue
+			}
+			if len(pipeline.Properties.Activities) == 0 {
+				continue
+			}
+
+			for _, activity := range pipeline.Properties.Activities {
+				nActivities++
+				switch *activity.GetActivity().Type {
+				case "Copy":
+					nCopyActivities++
+				case "DatabricksNotebook":
+					nDatabricksActivities++
+				}
+			}
+		}
+
+		pipelineSummary = append(pipelineSummary, FactoryPipelineSummary{
+			factoryName:           factory.factoryName,
+			folder:                folder,
+			nPipelines:            nPipelines,
+			nActivities:           nActivities,
+			nCopyActivities:       nCopyActivities,
+			nDatabricksActivities: nDatabricksActivities,
+		})
+	}
+	return pipelineSummary
+}
+
+func SummarizeRuns(nDays int, name string) {
+	defer timer("SummarizeRuns")()
 	factory := getFactoryClient()
 	ctx := context.Background()
 
@@ -101,6 +224,35 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 	tbl.Print()
 
 	fmt.Println(footer)
+}
+
+func getAllPipelines(factory *Factory, ctx context.Context) []*armdatafactory.PipelineResource {
+	// list all pipelines in the factory
+	defer timer("getAllPipelines")()
+	pipelineClient := factory.factoryClient.NewPipelinesClient()
+	pager := pipelineClient.NewListByFactoryPager(factory.resouceGroupName, factory.factoryName, nil)
+
+	pipelines := []armdatafactory.PipelineResource{}
+
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, value := range page.Value {
+			pipelines = append(pipelines, *value)
+		}
+	}
+
+	fmt.Println("obtained", len(pipelines), "pipelines")
+
+	var pipelinePointers []*armdatafactory.PipelineResource
+	for _, pipeline := range pipelines {
+		pipelinePointers = append(pipelinePointers, &pipeline)
+	}
+
+	return pipelinePointers
 }
 
 func getPipelineRuns(
