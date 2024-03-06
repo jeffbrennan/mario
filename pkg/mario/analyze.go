@@ -34,13 +34,20 @@ func AnalyzeRuns(nDays int, name string) {
 func printTimeseries(name string, runStats []RunStats, durations []int32) {
 	defer timer("printTimeseries")()
 	var (
-		barCharacter = "\u25A4"
-		maxBarLength = 40
-		minBarLength = maxBarLength / 20
-		headerLength = 80
-		header       = createHeader("ANALYZE", headerLength, color.New(color.FgBlue), "=", true)
-		footer       = createHeader("", headerLength, color.New(color.FgWhite), "=", true)
+		barCharacter       = "\u25A4"
+		maxBarLength int32 = 40
+		minBarLength       = maxBarLength / 20
+		headerLength       = 80
 	)
+
+	header := createHeader(
+		"ANALYZE",
+		headerLength,
+		color.New(color.FgBlue),
+		"=",
+		true,
+	)
+	footer := createHeader("", headerLength, color.New(color.FgWhite), "=", true)
 
 	fmt.Println(header)
 
@@ -58,15 +65,27 @@ func printTimeseries(name string, runStats []RunStats, durations []int32) {
 
 	for i, run := range runStats {
 		var (
-			duration                   = run.durationMs
-			startTimeFormatted         = run.startTime.Format("2006-01-02 15:04:05")
-			durationTime               = time.Duration(duration) * time.Millisecond
-			durationFormatted          = durationTime.Truncate(time.Second).String()
-			previousDuration   int32   = 0
-			pctDiff            float64 = 0
-			pctDiffFormatted   string  = "0"
+			duration     = run.durationMs
+			runDistance  = duration - minDuration
+			barDistance  = maxDuration - minDuration
+			durationTime = time.Duration(duration) * time.Millisecond
+
+			startTimeFormatted = run.startTime.Format("2006-01-02 15:04:05")
+			durationFormatted  = durationTime.Truncate(time.Second).String()
+
+			previousDuration int32   = 0
+			pctDiff          float64 = 0
+			pctDiffFormatted string  = "0"
 		)
-		barLength := int(float64(duration-minDuration) / float64(maxDuration-minDuration) * float64(maxBarLength))
+
+		barLengthFloat := float64(
+			runDistance,
+		) / float64(
+			barDistance,
+		) * float64(
+			maxBarLength,
+		)
+		barLength := int32(barLengthFloat)
 
 		if barLength < minBarLength {
 			barLength = minBarLength
@@ -76,7 +95,7 @@ func printTimeseries(name string, runStats []RunStats, durations []int32) {
 			barLength = maxBarLength
 		}
 
-		bar := strings.Repeat(barCharacter, barLength)
+		bar := strings.Repeat(barCharacter, int(barLength))
 
 		if i > 0 {
 			previousDuration = int32(runStats[i-1].durationMs)
@@ -86,11 +105,11 @@ func printTimeseries(name string, runStats []RunStats, durations []int32) {
 
 		switch {
 		case pctDiff > 0:
-			pctDiffFormatted = color.New(color.FgRed).Sprint("\u2191", pctDiffFormatted, "%")
+			pctDiffFormatted = failureColor()("\u2191", pctDiffFormatted, "%")
 		case pctDiff < 0:
-			pctDiffFormatted = color.New(color.FgGreen).Sprint("\u2193", pctDiffFormatted, "%")
+			pctDiffFormatted = successColor()("\u2193", pctDiffFormatted, "%")
 		default:
-			pctDiffFormatted = color.New(color.FgWhite).Sprint(pctDiffFormatted, "%")
+			pctDiffFormatted = neutralColor()(pctDiffFormatted, "%")
 		}
 
 		switch {
@@ -101,7 +120,7 @@ func printTimeseries(name string, runStats []RunStats, durations []int32) {
 		case run.pipelineResult == "Cancelled":
 			bar = color.New(color.FgYellow).Sprint(bar)
 		default:
-			bar = color.New(color.FgWhite).Sprint(bar)
+			bar = neutralColor()(bar)
 		}
 
 		fmt.Println(startTimeFormatted, bar, durationFormatted, pctDiffFormatted)
@@ -112,7 +131,9 @@ func printTimeseries(name string, runStats []RunStats, durations []int32) {
 
 }
 
-func collectPipelineRunStats(pipelineRuns armdatafactory.PipelineRunsClientQueryByFactoryResponse) ([]RunStats, []int32) {
+func collectPipelineRunStats(
+	pipelineRuns armdatafactory.PipelineRunsClientQueryByFactoryResponse,
+) ([]RunStats, []int32) {
 	defer timer("collectPipelineRunStats")()
 
 	runStats := make([]RunStats, len(pipelineRuns.Value))

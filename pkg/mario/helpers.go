@@ -96,3 +96,7 @@ func successColor() func(a ...interface{}) string {
 func failureColor() func(a ...interface{}) string {
 	return color.New(color.FgRed).SprintFunc()
 }
+
+func neutralColor() func(a ...interface{}) string {
+	return color.New(color.FgWhite).SprintFunc()
+}
