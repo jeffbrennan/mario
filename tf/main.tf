@@ -81,11 +81,6 @@ resource "azurerm_key_vault" "vault" {
   soft_delete_retention_days = 7
 }
 
-resource "azurerm_databricks_workspace_secrets_scope" "databricks_secrets" {
-  workspace_id = azurerm_databricks_workspace.databricks.id
-  scope_name   = "jb-secrets"
-  key_vault_id = azurerm_key_vault.vault.id
-}
 
 resource "azurerm_data_factory_linked_service_azure_databricks" "databricks_linked_service_tf" {
   name            = "databricks_linked_service_tf"
