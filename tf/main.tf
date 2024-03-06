@@ -80,3 +80,31 @@ resource "azurerm_key_vault" "vault" {
   sku_name                   = "standard"
   soft_delete_retention_days = 7
 }
+
+resource "azurerm_databricks_workspace_secrets_scope" "databricks_secrets" {
+  workspace_id = azurerm_databricks_workspace.databricks.id
+  scope_name   = "jb-secrets"
+  key_vault_id = azurerm_key_vault.vault.id
+}
+
+resource "azurerm_data_factory_linked_service_azure_databricks" "databricks_linked_service_tf" {
+  name            = "databricks_linked_service_tf"
+  data_factory_id = azurerm_data_factory.adf.id
+  description     = "databricks linked service"
+  adb_domain      = "https://${azurerm_databricks_workspace.databricks.workspace_url}"
+
+  msi_work_space_resource_id = azurerm_databricks_workspace.databricks.id
+
+  new_cluster_config {
+    node_type             = "Standard_DS3_v2"
+    cluster_version       = "14.3.x-scala2.12"
+    min_number_of_workers = 1
+    max_number_of_workers = 1
+    driver_node_type      = "Standard_DS3_v2"
+
+
+    spark_environment_variables = {
+      "PYSPARK_PYTHON" = "/databricks/python3/bin/python3"
+    }
+  }
+}
