@@ -95,9 +95,9 @@ func printTimeseries(name string, runStats []RunStats, durations []int32) {
 
 		switch {
 		case run.pipelineResult == "Succeeded":
-			bar = successColor(bar)
+			bar = successColor()(bar)
 		case run.pipelineResult == "Failed":
-			bar = failureColor(bar)
+			bar = failureColor()(bar)
 		case run.pipelineResult == "Cancelled":
 			bar = color.New(color.FgYellow).Sprint(bar)
 		default:

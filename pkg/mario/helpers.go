@@ -88,3 +88,11 @@ func getFactoryClient() Factory {
 	}
 
 }
+
+func successColor() func(a ...interface{}) string {
+	return color.New(color.FgGreen).SprintFunc()
+}
+
+func failureColor() func(a ...interface{}) string {
+	return color.New(color.FgRed).SprintFunc()
+}
