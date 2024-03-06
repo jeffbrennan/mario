@@ -74,8 +74,20 @@ func printDiffOutput(
 	pipeline1Color := color.New(color.FgYellow).SprintFunc()
 	pipeline2Color := color.New(color.FgCyan).SprintFunc()
 
-	header := createHeader("COMPARE", headerLength, color.New(color.FgBlue), "=", true)
-	footer := createHeader("", headerLength, color.New(color.FgWhite), "=", true)
+	header := createHeader(
+		"COMPARE",
+		headerLength,
+		color.New(color.FgBlue),
+		"=",
+		true,
+	)
+	footer := createHeader(
+		"",
+		headerLength,
+		color.New(color.FgWhite),
+		"=",
+		true,
+	)
 
 	fmt.Print("\n", header, "\n")
 

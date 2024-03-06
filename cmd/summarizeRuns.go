@@ -17,7 +17,8 @@ var summarizeRunsCmd = &cobra.Command{
 
 func init() {
 	summarizeCmd.AddCommand(summarizeRunsCmd)
-	summarizeRunsCmd.PersistentFlags().Int("days", 7, "number of days to summarize")
+	summarizeRunsCmd.PersistentFlags().
+		Int("days", 7, "number of days to summarize")
 	summarizeRunsCmd.PersistentFlags().
 		String("name", "", "substring of the pipeline to summarize")
 }

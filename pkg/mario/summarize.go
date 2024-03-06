@@ -37,8 +37,20 @@ func printPipelineDetailsSummary(pipelineSummary []FactoryPipelineSummary) {
 	defer timer("printPipelineRunSummary")()
 	headerLength := 80
 
-	header := createHeader("SUMMARIZE", headerLength, color.New(color.FgBlue), "=", true)
-	footer := createHeader("", headerLength, color.New(color.FgHiCyan), "=", true)
+	header := createHeader(
+		"SUMMARIZE",
+		headerLength,
+		color.New(color.FgBlue),
+		"=",
+		true,
+	)
+	footer := createHeader(
+		"",
+		headerLength,
+		color.New(color.FgHiCyan),
+		"=",
+		true,
+	)
 	fmt.Print("\n", header, "\n")
 
 	headerFmt := color.New(color.Underline).SprintfFunc()
@@ -71,7 +83,10 @@ func printPipelineDetailsSummary(pipelineSummary []FactoryPipelineSummary) {
 	fmt.Println(footer)
 }
 
-func summarizePipelineDetails(factory Factory, pipelines []*armdatafactory.PipelineResource) []FactoryPipelineSummary {
+func summarizePipelineDetails(
+	factory Factory,
+	pipelines []*armdatafactory.PipelineResource,
+) []FactoryPipelineSummary {
 	defer timer("summarizePipelineDetails")()
 
 	pipelineSummary := []FactoryPipelineSummary{}
@@ -89,7 +104,9 @@ func summarizePipelineDetails(factory Factory, pipelines []*armdatafactory.Pipel
 
 		if !slices.Contains(uniqueFolders, pipelineFolder) {
 			// add folder to map for the first time
-			pipelinesByFolder[pipelineFolder] = []armdatafactory.PipelineResource{*pipeline}
+			pipelinesByFolder[pipelineFolder] = []armdatafactory.PipelineResource{
+				*pipeline,
+			}
 			uniqueFolders = append(uniqueFolders, pipelineFolder)
 		} else {
 			// append to existing folder
@@ -192,8 +209,20 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 
 	headerLength := 80
 
-	header := createHeader("SUMMARIZE", headerLength, color.New(color.FgBlue), "=", true)
-	footer := createHeader("", headerLength, color.New(color.FgHiCyan), "=", true)
+	header := createHeader(
+		"SUMMARIZE",
+		headerLength,
+		color.New(color.FgBlue),
+		"=",
+		true,
+	)
+	footer := createHeader(
+		"",
+		headerLength,
+		color.New(color.FgHiCyan),
+		"=",
+		true,
+	)
 
 	fmt.Print("\n", header, "\n")
 
@@ -236,11 +265,18 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 	fmt.Println(footer)
 }
 
-func getAllPipelines(factory *Factory, ctx context.Context) []*armdatafactory.PipelineResource {
+func getAllPipelines(
+	factory *Factory,
+	ctx context.Context,
+) []*armdatafactory.PipelineResource {
 	// list all pipelines in the factory
 	defer timer("getAllPipelines")()
 	pipelineClient := factory.factoryClient.NewPipelinesClient()
-	pager := pipelineClient.NewListByFactoryPager(factory.resouceGroupName, factory.factoryName, nil)
+	pager := pipelineClient.NewListByFactoryPager(
+		factory.resouceGroupName,
+		factory.factoryName,
+		nil,
+	)
 
 	pipelines := []armdatafactory.PipelineResource{}
 
@@ -280,7 +316,9 @@ func getPipelineRuns(
 	}
 
 	runsFrom := time.Now().AddDate(0, 0, -nDays)
-	runsTo := time.Now().AddDate(0, 0, 1) // add 1 day to include today and handle timezones
+	runsTo := time.Now().
+		AddDate(0, 0, 1)
+		// add 1 day to include today and handle timezones
 
 	runFilterParameters := armdatafactory.RunFilterParameters{
 		LastUpdatedAfter:  &runsFrom,
