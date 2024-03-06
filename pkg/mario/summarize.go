@@ -189,21 +189,30 @@ func summarizePipelineRuns(
 
 func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 	defer timer("printPipelineRunSummary")()
+
 	headerLength := 80
 
 	header := createHeader("SUMMARIZE", headerLength, color.New(color.FgBlue), "=", true)
 	footer := createHeader("", headerLength, color.New(color.FgHiCyan), "=", true)
+
 	fmt.Print("\n", header, "\n")
+
+	if len(pipelineRunSummary) == 0 {
+		fmt.Println("No pipeline runs found")
+		fmt.Println(footer)
+		return
+	}
 
 	headerFmt := color.New(color.Underline).SprintfFunc()
 	columnFmt := color.New(color.FgYellow).SprintfFunc()
 
 	tbl := table.New(
 		"Pipeline",
-		"Success",
-		"Failed",
-		"In Progress",
-		"Avg Runtime (min)",
+		"Avg Time (min)",
+		"Total Time (min)",
+		"\u2714",
+		"\u2718",
+		"\u2022\u2022\u2022",
 	)
 
 	tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
@@ -214,10 +223,11 @@ func printPipelineRunSummary(pipelineRunSummary map[string]PipelineRunSummary) {
 		)
 		tbl.AddRow(
 			summary.PipelineName,
+			summary.RuntimeAvgMin,
+			summary.RuntimeTotalMin,
 			summary.Success,
 			summary.Failed,
 			summary.InProgress,
-			summary.RuntimeAvgMin,
 		)
 	}
 
@@ -270,7 +280,7 @@ func getPipelineRuns(
 	}
 
 	runsFrom := time.Now().AddDate(0, 0, -nDays)
-	runsTo := time.Now()
+	runsTo := time.Now().AddDate(0, 0, 1) // add 1 day to include today and handle timezones
 
 	runFilterParameters := armdatafactory.RunFilterParameters{
 		LastUpdatedAfter:  &runsFrom,
@@ -292,8 +302,6 @@ func getPipelineRuns(
 		runFilterParameters,
 		nil,
 	)
-
-	log.Printf("Query took %v", time.Since(query_start))
 
 	if err != nil {
 		log.Fatal(err)
